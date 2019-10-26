@@ -17,7 +17,6 @@
 package quasar.destination.azure
 
 import scala._
-import scala.Predef._
 import scala.util.Either
 
 import quasar.api.destination.DestinationError.InitializationError
@@ -29,7 +28,6 @@ import quasar.blobstore.azure.{
   AccountName,
   Azure,
   AzureCredentials,
-  AzureGetService,
   AzurePutService,
   AzureStatusService
 }
@@ -41,10 +39,7 @@ import eu.timepit.refined.auto._
 
 import cats.data.EitherT
 import cats.effect.{ConcurrentEffect, ContextShift, Resource, Timer}
-import cats.instances.either._
-import cats.syntax.bifunctor._
 import cats.syntax.either._
-import com.microsoft.azure.storage.blob.ContainerURL
 import scalaz.NonEmptyList
 
 object AzureDestinationModule extends DestinationModule {
@@ -61,35 +56,33 @@ object AzureDestinationModule extends DestinationModule {
 
   def destination[F[_]: ConcurrentEffect: ContextShift: MonadResourceErr: Timer](
     config: Json): Resource[F, Either[InitializationError[Json], Destination[F]]] = {
+    Resource.liftF(
+      (for {
+        azureConfig <- EitherT.fromEither[F][InitializationError[Json], AzureConfig](
+          config.as[AzureConfig].result.leftMap {
+            case (err, _) =>
+              DestinationError.malformedConfiguration((destinationType, config, err))
+          })
 
-    val dest = for {
-      azureConfig <- EitherT.fromEither[F][InitializationError[Json], AzureConfig](
-        config.as[AzureConfig].result.leftMap {
-          case (err, _) =>
-            DestinationError.malformedConfiguration((destinationType, config, err))
+        containerUrl <- EitherT.liftF(Azure.mkContainerUrl[F](AzureConfig.toConfig(azureConfig)))
+        status <- EitherT.liftF(AzureStatusService.mk[F](containerUrl))
+
+        _ <- EitherT.fromEither[F](status match {
+          case BlobstoreStatus.NotFound =>
+            DestinationError.invalidConfiguration((
+              destinationType, config, NonEmptyList("Container not found"))).asLeft
+          case BlobstoreStatus.NoAccess =>
+            DestinationError.accessDenied((
+              destinationType, config, "Access denied")).asLeft
+          case BlobstoreStatus.NotOk(msg) =>
+            DestinationError.invalidConfiguration((
+              destinationType, config, NonEmptyList(s"Unable to connect: $msg"))).asLeft
+          case BlobstoreStatus.Ok =>
+            ().asRight
         })
 
-      containerUrl <- EitherT.liftF(Azure.mkContainerUrl[F](AzureConfig.toConfig(azureConfig)))
-      status <- EitherT.liftF(AzureStatusService.mk[F](containerUrl))
+        destination: Destination[F] = AzureDestination[F](AzurePutService.mk[F](containerUrl))
 
-      _ <- EitherT.fromEither[F](status match {
-        case BlobstoreStatus.NotFound =>
-          DestinationError.invalidConfiguration((
-            destinationType, config, NonEmptyList("Container not found"))).asLeft
-        case BlobstoreStatus.NoAccess =>
-          DestinationError.accessDenied((
-            destinationType, config, "Access denied")).asLeft
-        case BlobstoreStatus.NotOk(msg) =>
-          DestinationError.invalidConfiguration((
-            destinationType, config, NonEmptyList(s"Unable to connect: $msg"))).asLeft
-        case BlobstoreStatus.Ok =>
-          ().asRight
-      })
-
-      destination = AzureDestination[F](AzurePutService.mk[F](containerUrl))
-
-    } yield destination
-
-    ???
+      } yield destination).value)
   }
 }
