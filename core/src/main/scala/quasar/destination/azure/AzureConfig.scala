@@ -38,13 +38,13 @@ final case class AzureConfig(
   credentials: AzureCredentials)
 
 object AzureConfig {
-  implicit val decodeJsonAzureCredentials: DecodeJson[AzureCredentials] =
+  implicit val azureCredentialsDecodeJson: DecodeJson[AzureCredentials] =
     DecodeJson(c => for {
       accountName <- c.downField("accountName").as[String]
       accountKey <- c.downField("accountKey").as[String]
     } yield AzureCredentials(AccountName(accountName), AccountKey(accountKey)))
 
-  implicit val decodeJsonAzureConfig: DecodeJson[AzureConfig] =
+  implicit val azureConfigDecodeJson: DecodeJson[AzureConfig] =
     DecodeJson(c => for {
       containerName <- c.downField("container").as[String]
       storageUrl <- c.downField("storageUrl").as[String]
@@ -53,6 +53,17 @@ object AzureConfig {
       ContainerName(containerName),
       StorageUrl(storageUrl),
       credentials))
+
+  implicit val azureCredentialsEncodeJson: EncodeJson[AzureCredentials] =
+    EncodeJson(creds => Json.obj(
+      "accountName" := creds.accountName.value,
+      "accountKey" := creds.accountKey.value))
+
+  implicit val azureConfigEncodeJson: EncodeJson[AzureConfig] =
+    EncodeJson(cfg => Json.obj(
+      "container" := cfg.containerName.value,
+      "storageUrl" := cfg.storageUrl.value,
+      "credentials" := cfg.credentials))
 
   def toConfig(azureConfig: AzureConfig): Config =
     DefaultConfig(

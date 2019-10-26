@@ -32,9 +32,8 @@ import fs2.Stream
 
 import scalaz.NonEmptyList
 
-final class AzureDestination[F[_]: Concurrent: ContextShift: MonadResourceErr](
+final case class AzureDestination[F[_]: Concurrent: ContextShift: MonadResourceErr](
   put: PutService[F]) extends Destination[F] {
-
   def destinationType: DestinationType = DestinationType("azure-dest", 1L)
 
   def sinks: NonEmptyList[ResultSink[F]] = NonEmptyList(csvSink)
