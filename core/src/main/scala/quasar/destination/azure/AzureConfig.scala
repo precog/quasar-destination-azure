@@ -31,6 +31,7 @@ import quasar.blobstore.azure.{
 }
 
 import argonaut._, Argonaut._
+import cats.syntax.option._
 
 final case class AzureConfig(
   containerName: ContainerName,
@@ -38,26 +39,17 @@ final case class AzureConfig(
   credentials: AzureCredentials)
 
 object AzureConfig {
-  implicit val azureCredentialsDecodeJson: DecodeJson[AzureCredentials] =
-    jdecode2L[String, String, AzureCredentials]((accountName, accountKey) =>
-      AzureCredentials(AccountName(accountName), AccountKey(accountKey)))(
+  implicit val azureCredentialsDecodeJson: CodecJson[AzureCredentials] =
+    casecodec2[String, String, AzureCredentials](
+      (an, ak) => AzureCredentials(AccountName(an), AccountKey(ak)),
+      creds => (creds.accountName.value, creds.accountKey.value).some)(
       "accountName", "accountKey")
 
-  implicit val azureConfigDecodeJson: DecodeJson[AzureConfig] =
-    jdecode3L[String, String, AzureCredentials, AzureConfig]((cn, st, creds) =>
-      AzureConfig(ContainerName(cn), StorageUrl(st), creds))(
+  implicit val azureConfigDecodeJson: CodecJson[AzureConfig] =
+    casecodec3[String, String, AzureCredentials, AzureConfig](
+      (cn, st, creds) => AzureConfig(ContainerName(cn), StorageUrl(st), creds),
+      cfg => (cfg.containerName.value, cfg.storageUrl.value, cfg.credentials).some)(
       "container", "storageUrl", "credentials")
-
-  implicit val azureCredentialsEncodeJson: EncodeJson[AzureCredentials] =
-    EncodeJson(creds => Json.obj(
-      "accountName" := creds.accountName.value,
-      "accountKey" := creds.accountKey.value))
-
-  implicit val azureConfigEncodeJson: EncodeJson[AzureConfig] =
-    EncodeJson(cfg => Json.obj(
-      "container" := cfg.containerName.value,
-      "storageUrl" := cfg.storageUrl.value,
-      "credentials" := cfg.credentials))
 
   def toConfig(azureConfig: AzureConfig): Config =
     DefaultConfig(
