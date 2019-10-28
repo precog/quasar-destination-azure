@@ -20,8 +20,7 @@ import scala._
 import scala.util.Either
 
 import quasar.api.destination.DestinationError.InitializationError
-import quasar.api.destination.{Destination, DestinationType}
-import quasar.api.destination.{DestinationError, DestinationType}
+import quasar.api.destination.{Destination, DestinationError, DestinationType}
 import quasar.connector.{DestinationModule, MonadResourceErr}
 import quasar.blobstore.azure.{
   AccountKey,
@@ -55,10 +54,10 @@ object AzureDestinationModule extends DestinationModule {
       cfg.copy(credentials = RedactedCreds).asJson)
 
   def destination[F[_]: ConcurrentEffect: ContextShift: MonadResourceErr: Timer](
-    config: Json): Resource[F, Either[InitializationError[Json], Destination[F]]] = {
+    config: Json): Resource[F, Either[InitializationError[Json], Destination[F]]] =
     Resource.liftF(
       (for {
-        azureConfig <- EitherT.fromEither[F][InitializationError[Json], AzureConfig](
+        azureConfig <- EitherT.fromEither[F](
           config.as[AzureConfig].result.leftMap {
             case (err, _) =>
               DestinationError.malformedConfiguration((destinationType, config, err))
@@ -84,5 +83,4 @@ object AzureDestinationModule extends DestinationModule {
         destination: Destination[F] = AzureDestination[F](AzurePutService.mk[F](containerUrl))
 
       } yield destination).value)
-  }
 }
