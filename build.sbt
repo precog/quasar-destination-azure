@@ -32,6 +32,7 @@ lazy val core = project
     quasarPluginDestinationFqcn := Some("quasar.destination.azure.AzureDestinationModule$"),
     quasarPluginDependencies ++= Seq(
       "com.slamdata" %% "async-blobstore-azure" % AsyncBlobstoreVersion,
+      "com.slamdata" %% "async-blobstore-core" % AsyncBlobstoreVersion,
       "io.argonaut" %% "argonaut" % ArgonautVersion,
       "co.fs2" %% "fs2-core" % Fs2Version))
   .enablePlugins(AutomateHeaderPlugin, QuasarPlugin)
