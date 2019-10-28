@@ -39,20 +39,14 @@ final case class AzureConfig(
 
 object AzureConfig {
   implicit val azureCredentialsDecodeJson: DecodeJson[AzureCredentials] =
-    DecodeJson(c => for {
-      accountName <- c.downField("accountName").as[String]
-      accountKey <- c.downField("accountKey").as[String]
-    } yield AzureCredentials(AccountName(accountName), AccountKey(accountKey)))
+    jdecode2L[String, String, AzureCredentials]((accountName, accountKey) =>
+      AzureCredentials(AccountName(accountName), AccountKey(accountKey)))(
+      "accountName", "accountKey")
 
   implicit val azureConfigDecodeJson: DecodeJson[AzureConfig] =
-    DecodeJson(c => for {
-      containerName <- c.downField("container").as[String]
-      storageUrl <- c.downField("storageUrl").as[String]
-      credentials <- c.downField("credentials").as[AzureCredentials]
-    } yield AzureConfig(
-      ContainerName(containerName),
-      StorageUrl(storageUrl),
-      credentials))
+    jdecode3L[String, String, AzureCredentials, AzureConfig]((cn, st, creds) =>
+      AzureConfig(ContainerName(cn), StorageUrl(st), creds))(
+      "container", "storageUrl", "credentials")
 
   implicit val azureCredentialsEncodeJson: EncodeJson[AzureCredentials] =
     EncodeJson(creds => Json.obj(
