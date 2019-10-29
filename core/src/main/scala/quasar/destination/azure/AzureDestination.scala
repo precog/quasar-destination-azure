@@ -21,7 +21,6 @@ import quasar.api.push.RenderConfig
 import quasar.api.resource.ResourcePath
 import quasar.blobstore.paths.{BlobPath, PathElem, Path}
 import quasar.blobstore.services.PutService
-import quasar.connector.MonadResourceErr
 
 import cats.effect.{Concurrent, ContextShift}
 import cats.syntax.functor._
@@ -32,7 +31,7 @@ import fs2.Stream
 
 import scalaz.NonEmptyList
 
-final case class AzureDestination[F[_]: Concurrent: ContextShift: MonadResourceErr](
+final case class AzureDestination[F[_]: Concurrent: ContextShift](
   put: PutService[F]) extends Destination[F] {
   def destinationType: DestinationType = DestinationType("azure-dest", 1L)
 

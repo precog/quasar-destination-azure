@@ -13,7 +13,7 @@ libraryDependencies += "com.slamdata" %% "quasar-destination-azure" % <version>
   "container": String,
   "storageUrl": String,
   "credentials": {
-    "accountName": String
+    "accountName": String,
     "accountKey": String
   }
 }
