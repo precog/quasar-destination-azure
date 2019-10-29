@@ -16,39 +16,39 @@
 
 package quasar.destination.azure
 
-import quasar.blobstore.azure.{
-  AccountKey,
-  AccountName,
-  AzureCredentials,
-  ContainerName,
-  StorageUrl
-}
-
 import argonaut._, Argonaut._
 import org.specs2.mutable.Specification
 
-object AzureConfigSpec extends Specification {
-  "parses a valid configuration" >> {
-    val testConfig = Json.obj(
+object AzureDestinationModuleSpec extends Specification {
+  "redacts credentials" >> {
+    val toRedact = Json.obj(
       "container" := "some-name",
       "storageUrl" := "https://some-name.blob.core.windows.net",
       "credentials" := Json.obj(
         "accountName" := "some-name",
         "accountKey" := "some-key"))
 
-    testConfig.as[AzureConfig].result must beRight(AzureConfig(
-      ContainerName("some-name"),
-      StorageUrl("https://some-name.blob.core.windows.net"),
-      AzureCredentials(
-        AccountName("some-name"),
-        AccountKey("some-key"))))
+    val redacted = Json.obj(
+      "container" := "some-name",
+      "storageUrl" := "https://some-name.blob.core.windows.net",
+      "credentials" := Json.obj(
+        "accountName" := "<REDACTED>",
+        "accountKey" := "<REDACTED>"))
+
+    AzureDestinationModule
+      .sanitizeDestinationConfig(toRedact) must_== redacted
   }
 
-  "credentials are mandatory" >> {
-    val testConfig = Json.obj(
+  "returns empty object when configuration parsing fails" >> {
+    val toRedact = Json.obj(
       "container" := "some-name",
-      "storageUrl" := "https://some-name.blob.core.windows.net")
+      "storageUrl" := "https://some-name.blob.core.windows.net",
+      "credentials" := Json.obj(
+        "name" := "some-name",
+        "key" := "some-key"))
 
-    testConfig.as[AzureConfig].result must beLeft
+    AzureDestinationModule
+      .sanitizeDestinationConfig(toRedact) must_== Json.jEmptyObject
+
   }
 }
