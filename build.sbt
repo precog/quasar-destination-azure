@@ -12,7 +12,7 @@ lazy val publishTestsSettings = Seq(
 
 lazy val QuasarVersion = IO.read(file("./quasar-version")).trim
 val ArgonautVersion = "6.2.3"
-val AsyncBlobstoreVersion = "0.1.5-f0d72a4"
+val AsyncBlobstoreVersion = "0.1.5-97fa387"
 val Fs2Version = "1.0.5"
 val SpecsVersion = "4.7.0"
 
