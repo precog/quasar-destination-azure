@@ -12,8 +12,9 @@ lazy val publishTestsSettings = Seq(
 
 lazy val QuasarVersion = IO.read(file("./quasar-version")).trim
 val ArgonautVersion = "6.2.3"
-val AsyncBlobstoreVersion = "0.1.5"
+val AsyncBlobstoreVersion = "0.1.6"
 val Fs2Version = "1.0.5"
+val SpecsVersion = "4.7.0"
 
 lazy val root = project
   .in(file("."))
@@ -29,9 +30,12 @@ lazy val core = project
     publishAsOSSProject := false,
     quasarPluginName := "azure-dest",
     quasarPluginQuasarVersion := QuasarVersion,
-    quasarPluginDestinationFqcn := Some("quasar.destination.s3.AzureDestinationModule$"),
+    quasarPluginDestinationFqcn := Some("quasar.destination.azure.AzureDestinationModule$"),
     quasarPluginDependencies ++= Seq(
+      "com.slamdata" %% "async-blobstore-azure" % AsyncBlobstoreVersion,
       "com.slamdata" %% "async-blobstore-core" % AsyncBlobstoreVersion,
       "io.argonaut" %% "argonaut" % ArgonautVersion,
-      "co.fs2" %% "fs2-core" % Fs2Version))
+      "co.fs2" %% "fs2-core" % Fs2Version),
+    libraryDependencies ++= Seq(
+      "org.specs2" %% "specs2-core" % SpecsVersion % Test))
   .enablePlugins(AutomateHeaderPlugin, QuasarPlugin)

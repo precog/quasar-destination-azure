@@ -5,3 +5,20 @@
 ```sbt
 libraryDependencies += "com.slamdata" %% "quasar-destination-azure" % <version>
 ```
+
+## Configuration
+
+```json
+{
+  "container": String,
+  "storageUrl": String,
+  "credentials": {
+    "accountName": String,
+    "accountKey": String
+  }
+}
+```
+
+* `container` the name of the Azure blobstore container to use.
+* `storageUrl` the Azure storage URL to use. Typically this will be an URL of the form `https://<accountName>.blob.core.windows.net/`.
+* `credentials` (mandatory) Azure credentials to use for access.
