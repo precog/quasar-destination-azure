@@ -28,7 +28,10 @@ import quasar.blobstore.azure.{
   Azure,
   AzureCredentials,
   AzurePutService,
-  AzureStatusService
+  AzureStatusService,
+  ClientId,
+  ClientSecret,
+  TenantId
 }
 import quasar.blobstore.BlobstoreStatus
 
@@ -43,15 +46,22 @@ import scalaz.NonEmptyList
 
 object AzureDestinationModule extends DestinationModule {
   private val Redacted = "<REDACTED>"
-  private val RedactedCreds =
-    AzureCredentials(AccountName(Redacted), AccountKey(Redacted))
+  private val SharedKeyRedactedCreds =
+    AzureCredentials.SharedKey(AccountName(Redacted), AccountKey(Redacted))
+  private val ActiveDirectoryRedactedCreds =
+    AzureCredentials.ActiveDirectory(ClientId(Redacted), TenantId(Redacted), ClientSecret(Redacted))
 
   def destinationType: DestinationType =
     DestinationType("azure-dest", 1L)
 
   def sanitizeDestinationConfig(config: Json): Json =
     config.as[AzureConfig].result.fold(_ => Json.jEmptyObject, cfg =>
-      cfg.copy(credentials = RedactedCreds).asJson)
+      (cfg.credentials match {
+        case AzureCredentials.SharedKey(_, _) =>
+          cfg.copy(credentials = SharedKeyRedactedCreds)
+        case AzureCredentials.ActiveDirectory(_, _, _) =>
+          cfg.copy(credentials = ActiveDirectoryRedactedCreds)
+      }).asJson)
 
   def destination[F[_]: ConcurrentEffect: ContextShift: MonadResourceErr: Timer](
     config: Json): Resource[F, Either[InitializationError[Json], Destination[F]]] =

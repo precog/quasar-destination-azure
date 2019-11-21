@@ -33,13 +33,14 @@ object AzureConfigSpec extends Specification {
       "container" := "some-name",
       "storageUrl" := "https://some-name.blob.core.windows.net",
       "credentials" := Json.obj(
+        "auth" := "sharedKey",
         "accountName" := "some-name",
         "accountKey" := "some-key"))
 
     testConfig.as[AzureConfig].result must beRight(AzureConfig(
       ContainerName("some-name"),
       StorageUrl("https://some-name.blob.core.windows.net"),
-      AzureCredentials(
+      AzureCredentials.SharedKey(
         AccountName("some-name"),
         AccountKey("some-key"))))
   }

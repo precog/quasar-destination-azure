@@ -23,11 +23,14 @@ import quasar.blobstore.azure.{
   AccountKey,
   AccountName,
   AzureCredentials,
-  ContainerName,
+  ClientId,
+  ClientSecret,
   Config,
+  ContainerName,
   DefaultConfig,
   MaxQueueSize,
-  StorageUrl
+  StorageUrl,
+  TenantId
 }
 
 import argonaut._, Argonaut._
@@ -39,11 +42,36 @@ final case class AzureConfig(
   credentials: AzureCredentials)
 
 object AzureConfig {
-  implicit val azureCredentialsDecodeJson: CodecJson[AzureCredentials] =
-    casecodec2[String, String, AzureCredentials](
-      (an, ak) => AzureCredentials(AccountName(an), AccountKey(ak)),
-      creds => (creds.accountName.value, creds.accountKey.value).some)(
-      "accountName", "accountKey")
+  implicit val credentialsCodec: CodecJson[AzureCredentials] =
+    CodecJson({
+      case AzureCredentials.SharedKey(AccountName(an), AccountKey(ak)) =>
+        Json.obj(
+          "auth" := "sharedKey",
+          "accountName" := an,
+          "accountKey" := ak)
+      case AzureCredentials.ActiveDirectory(ClientId(cid), TenantId(tid), ClientSecret(cs)) =>
+        Json.obj(
+          "auth" := "activeDirectory",
+          "clientId" := cid,
+          "tenantId" := tid,
+          "clientSecret" := cs)
+    }, c => for {
+      auth <- c.get[String]("auth")
+      credentials <- auth match {
+        case "sharedKey" => for {
+          an <- c.get[String]("accountName")
+          ak <- c.get[String]("accountKey")
+        } yield AzureCredentials.SharedKey(AccountName(an), AccountKey(ak))
+
+        case "activeDirectory" => for {
+          cid <- c.get[String]("clientId")
+          tid <- c.get[String]("tenantId")
+          cs <- c.get[String]("clientSecret")
+        } yield AzureCredentials.ActiveDirectory(ClientId(cid), TenantId(tid), ClientSecret(cs))
+
+        case _ => DecodeResult.fail("auth must be 'sharedKey' or 'activeDirectory", c.history)
+      }
+    } yield credentials)
 
   implicit val azureConfigDecodeJson: CodecJson[AzureConfig] =
     casecodec3[String, String, AzureCredentials, AzureConfig](

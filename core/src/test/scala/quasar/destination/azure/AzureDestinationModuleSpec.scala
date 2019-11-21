@@ -25,6 +25,7 @@ object AzureDestinationModuleSpec extends Specification {
       "container" := "some-name",
       "storageUrl" := "https://some-name.blob.core.windows.net",
       "credentials" := Json.obj(
+        "auth" := "sharedKey",
         "accountName" := "some-name",
         "accountKey" := "some-key"))
 
@@ -32,6 +33,7 @@ object AzureDestinationModuleSpec extends Specification {
       "container" := "some-name",
       "storageUrl" := "https://some-name.blob.core.windows.net",
       "credentials" := Json.obj(
+        "auth" := "sharedKey",
         "accountName" := "<REDACTED>",
         "accountKey" := "<REDACTED>"))
 
@@ -44,6 +46,7 @@ object AzureDestinationModuleSpec extends Specification {
       "container" := "some-name",
       "storageUrl" := "https://some-name.blob.core.windows.net",
       "credentials" := Json.obj(
+        "auth" := "sharedKey",
         "name" := "some-name",
         "key" := "some-key"))
 
