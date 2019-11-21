@@ -45,6 +45,34 @@ object AzureConfigSpec extends Specification {
         AccountKey("some-key"))))
   }
 
+  "defaults to shared key authentication when not specified" >> {
+    val testConfig = Json.obj(
+      "container" := "some-name",
+      "storageUrl" := "https://some-name.blob.core.windows.net",
+      "credentials" := Json.obj(
+        "accountName" := "some-name",
+        "accountKey" := "some-key"))
+
+    testConfig.as[AzureConfig].result must beRight(AzureConfig(
+      ContainerName("some-name"),
+      StorageUrl("https://some-name.blob.core.windows.net"),
+      AzureCredentials.SharedKey(
+        AccountName("some-name"),
+        AccountKey("some-key"))))
+  }
+
+  "rejects unknown 'auth' values" >> {
+    val testConfig = Json.obj(
+      "container" := "some-name",
+      "storageUrl" := "https://some-name.blob.core.windows.net",
+      "credentials" := Json.obj(
+        "auth" := "nope",
+        "accountName" := "some-name",
+        "accountKey" := "some-key"))
+
+    testConfig.as[AzureConfig].result must beLeft
+  }
+
   "credentials are mandatory" >> {
     val testConfig = Json.obj(
       "container" := "some-name",

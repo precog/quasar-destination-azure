@@ -56,7 +56,7 @@ object AzureConfig {
           "tenantId" := tid,
           "clientSecret" := cs)
     }, c => for {
-      auth <- c.get[String]("auth")
+      auth <- c.get[String]("auth") ||| DecodeResult.ok("sharedKey")
       credentials <- auth match {
         case "sharedKey" => for {
           an <- c.get[String]("accountName")
