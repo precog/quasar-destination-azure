@@ -31,16 +31,20 @@ import quasar.blobstore.azure.{
   AzureStatusService,
   ClientId,
   ClientSecret,
+  Expires,
   TenantId
 }
 import quasar.blobstore.BlobstoreStatus
 
 import argonaut._, Argonaut._
 
+import com.microsoft.azure.storage.blob.ContainerURL
+
 import eu.timepit.refined.auto._
 
 import cats.data.EitherT
 import cats.effect.{ConcurrentEffect, ContextShift, Resource, Timer}
+import cats.effect.concurrent.Ref
 import cats.syntax.either._
 import scalaz.NonEmptyList
 
@@ -73,8 +77,10 @@ object AzureDestinationModule extends DestinationModule {
               DestinationError.malformedConfiguration((destinationType, config, err))
           })
 
-        containerUrl <- EitherT.liftF(Azure.mkContainerUrl[F](AzureConfig.toConfig(azureConfig)))
-        status <- EitherT.liftF(AzureStatusService.mk[F](containerUrl))
+        containerURL <- EitherT.liftF(Azure.mkContainerUrl[F](AzureConfig.toConfig(azureConfig)))
+        refContainerURL <- EitherT.liftF(Ref.of[F, Expires[ContainerURL]](containerURL))
+
+        status <- EitherT.liftF(AzureStatusService.mk[F](containerURL.value))
 
         _ <- EitherT.fromEither[F](status match {
           case BlobstoreStatus.NotFound =>
@@ -90,7 +96,7 @@ object AzureDestinationModule extends DestinationModule {
             ().asRight
         })
 
-        destination: Destination[F] = AzureDestination[F](AzurePutService.mk[F](containerUrl))
+        destination: Destination[F] = AzureDestination[F](refContainerURL, azureConfig)
 
       } yield destination).value)
 }
