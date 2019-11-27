@@ -30,21 +30,18 @@ import quasar.blobstore.azure.{
   AzureStatusService,
   ClientId,
   ClientSecret,
-  Expires,
   TenantId
 }
 import quasar.blobstore.BlobstoreStatus
 
 import argonaut._, Argonaut._
 
-import com.microsoft.azure.storage.blob.ContainerURL
-
 import eu.timepit.refined.auto._
 
 import cats.data.EitherT
 import cats.effect.{ConcurrentEffect, ContextShift, Resource, Timer}
-import cats.effect.concurrent.Ref
-import cats.syntax.either._
+import cats.implicits._
+
 import scalaz.NonEmptyList
 
 object AzureDestinationModule extends DestinationModule {
@@ -76,8 +73,8 @@ object AzureDestinationModule extends DestinationModule {
               DestinationError.malformedConfiguration((destinationType, config, err))
           })
 
-        containerURL <- EitherT.liftF(Azure.mkContainerUrl[F](AzureConfig.toConfig(azureConfig)))
-        refContainerURL <- EitherT.liftF(Ref.of[F, Expires[ContainerURL]](containerURL))
+        (refContainerURL, refresh) <- EitherT.liftF(Azure.refContainerUrl(AzureConfig.toConfig(azureConfig)))
+        containerURL <- EitherT.liftF(refContainerURL.get)
 
         status <- EitherT.liftF(AzureStatusService.mk[F](containerURL.value))
 
@@ -95,7 +92,7 @@ object AzureDestinationModule extends DestinationModule {
             ().asRight
         })
 
-        destination: Destination[F] = AzureDestination[F](refContainerURL, azureConfig)
+        destination: Destination[F] = AzureDestination[F](refContainerURL, refresh)
 
       } yield destination).value)
 }

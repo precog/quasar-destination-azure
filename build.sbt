@@ -12,7 +12,7 @@ lazy val publishTestsSettings = Seq(
 
 lazy val QuasarVersion = IO.read(file("./quasar-version")).trim
 val ArgonautVersion = "6.2.3"
-val AsyncBlobstoreVersion = "0.1.6-9d9e235"
+val AsyncBlobstoreVersion = "0.1.6-e91a7d3"
 val Fs2Version = "1.0.5"
 val SpecsVersion = "4.7.0"
 
@@ -32,7 +32,6 @@ lazy val core = project
     quasarPluginQuasarVersion := QuasarVersion,
     quasarPluginDestinationFqcn := Some("quasar.destination.azure.AzureDestinationModule$"),
     quasarPluginDependencies ++= Seq(
-      "org.slf4s" %% "slf4s-api" % "1.7.25",
       "com.slamdata" %% "async-blobstore-azure" % AsyncBlobstoreVersion,
       "com.slamdata" %% "async-blobstore-core" % AsyncBlobstoreVersion,
       "io.argonaut" %% "argonaut" % ArgonautVersion,

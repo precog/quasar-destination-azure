@@ -16,18 +16,16 @@
 
 package quasar.destination.azure
 
-import scala.concurrent.duration.MILLISECONDS
-import scala.Predef._
 import scala._
 
 import quasar.api.destination.{Destination, DestinationType, ResultSink}
 import quasar.api.push.RenderConfig
 import quasar.api.resource.ResourcePath
-import quasar.blobstore.azure.{Azure, AzurePutService, Expires}
+import quasar.blobstore.azure.{AzurePutService, Expires}
 import quasar.blobstore.paths.{BlobPath, PathElem, Path}
 import quasar.blobstore.services.PutService
 
-import cats.effect.{ConcurrentEffect, ContextShift, Sync, Timer}
+import cats.effect.{ConcurrentEffect, ContextShift, Timer}
 import cats.effect.concurrent.Ref
 import cats.implicits._
 
@@ -37,49 +35,24 @@ import eu.timepit.refined.auto._
 
 import fs2.Stream
 
-import java.time.Instant
-
-import org.slf4s.Logging
-
 import scalaz.NonEmptyList
 
 final case class AzureDestination[F[_]: ConcurrentEffect: ContextShift: Timer](
   refContainerURL: Ref[F, Expires[ContainerURL]],
-  config: AzureConfig) extends Destination[F] with Logging {
+  refresh: F[Unit]) extends Destination[F] {
 
   def destinationType: DestinationType = DestinationType("azure-dest", 1L)
 
   def sinks: NonEmptyList[ResultSink[F]] = NonEmptyList(csvSink)
 
   private def csvSink = ResultSink.csv[F](RenderConfig.Csv()) {
-    case (path, _, bytes) => for {
-      containerURL <- Stream.eval(refContainerURL.get)
-      renewed <- Stream.eval(maybeRenew(containerURL))
-      put: PutService[F] = AzurePutService.mk[F](renewed)
-      _ <- Stream.eval(put((toBlobPath(path), bytes)).void)
-    } yield ()
+    case (path, _, bytes) => Stream.eval(for {
+      _ <- refresh
+      containerURL <- refContainerURL.get
+      put: PutService[F] = AzurePutService.mk[F](containerURL.value)
+      _ <- put((toBlobPath(path), bytes))
+    } yield ())
   }
-
-  private def maybeRenew(url: Expires[ContainerURL]): F[ContainerURL] =
-    for {
-      epochNow <- Timer[F].clock.realTime(MILLISECONDS)
-      now = Instant.ofEpochMilli(epochNow)
-      expiresAt = url.expiresAt.toInstant
-      _ <- debug(s"Credentials expire on: ${expiresAt}")
-      containerURL0 <-
-        if (now.isAfter(expiresAt))
-          for {
-            _ <- debug("Credentials expired, renewing...")
-            newContainerURL <- Azure.mkContainerUrl[F](AzureConfig.toConfig(config))
-            _ <- refContainerURL.set(newContainerURL)
-            _ <- debug("Renewed credentials")
-          } yield newContainerURL
-        else
-          debug("Credentials are still valid.") *> url.pure[F]
-    } yield containerURL0.value
-
-  private def debug(str: String): F[Unit] =
-    Sync[F].delay(log.debug(str))
 
   private def toBlobPath(path: ResourcePath): BlobPath =
     BlobPath(toPath(path))
