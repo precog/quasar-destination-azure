@@ -27,7 +27,6 @@ import quasar.blobstore.azure.{
   AccountName,
   Azure,
   AzureCredentials,
-  AzurePutService,
   AzureStatusService,
   ClientId,
   ClientSecret,
