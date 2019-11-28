@@ -12,13 +12,32 @@ libraryDependencies += "com.slamdata" %% "quasar-destination-azure" % <version>
 {
   "container": String,
   "storageUrl": String,
-  "credentials": {
-    "accountName": String,
-    "accountKey": String
-  }
+  "credentials": Object
 }
 ```
 
 * `container` the name of the Azure blobstore container to use.
 * `storageUrl` the Azure storage URL to use. Typically this will be an URL of the form `https://<accountName>.blob.core.windows.net/`.
-* `credentials` (mandatory) Azure credentials to use for access.
+* `credentials` (mandatory) Azure credentials to use for access. This
+  can be one of the following:
+  
+```
+{
+  "auth": "activeDirectory",
+  "clientId": String,
+  "tenantId": String,
+  "clientSecret": String
+}
+```
+
+or 
+
+```
+{
+  "auth": "sharedKey",
+  "accountName": String,
+  "accountKey": String
+}
+```
+
+If `auth` is unspecified `sharedKey` is assumed.
