@@ -20,7 +20,51 @@ import argonaut._, Argonaut._
 import org.specs2.mutable.Specification
 
 object AzureDestinationModuleSpec extends Specification {
-  "redacts credentials" >> {
+  "redacts shared key credentials" >> {
+    val toRedact = Json.obj(
+      "container" := "some-name",
+      "storageUrl" := "https://some-name.blob.core.windows.net",
+      "credentials" := Json.obj(
+        "auth" := "sharedKey",
+        "accountName" := "some-name",
+        "accountKey" := "some-key"))
+
+    val redacted = Json.obj(
+      "container" := "some-name",
+      "storageUrl" := "https://some-name.blob.core.windows.net",
+      "credentials" := Json.obj(
+        "auth" := "sharedKey",
+        "accountName" := "<REDACTED>",
+        "accountKey" := "<REDACTED>"))
+
+    AzureDestinationModule
+      .sanitizeDestinationConfig(toRedact) must_== redacted
+  }
+
+  "redacts Active Directory credentials" >> {
+    val toRedact = Json.obj(
+      "container" := "some-name",
+      "storageUrl" := "https://some-name.blob.core.windows.net",
+      "credentials" := Json.obj(
+        "auth" := "activeDirectory",
+        "clientId" := "some-client-id",
+        "tenantId" := "some-tenant-id",
+        "clientSecret" := "some-client-secret"))
+
+    val redacted = Json.obj(
+      "container" := "some-name",
+      "storageUrl" := "https://some-name.blob.core.windows.net",
+      "credentials" := Json.obj(
+        "auth" := "activeDirectory",
+        "clientId" := "<REDACTED>",
+        "tenantId" := "<REDACTED>",
+        "clientSecret" := "<REDACTED>"))
+
+    AzureDestinationModule
+      .sanitizeDestinationConfig(toRedact) must_== redacted
+  }
+
+  "redacts credentials with an unspecified 'auth'" >> {
     val toRedact = Json.obj(
       "container" := "some-name",
       "storageUrl" := "https://some-name.blob.core.windows.net",
@@ -32,6 +76,7 @@ object AzureDestinationModuleSpec extends Specification {
       "container" := "some-name",
       "storageUrl" := "https://some-name.blob.core.windows.net",
       "credentials" := Json.obj(
+        "auth" := "sharedKey",
         "accountName" := "<REDACTED>",
         "accountKey" := "<REDACTED>"))
 
@@ -44,11 +89,11 @@ object AzureDestinationModuleSpec extends Specification {
       "container" := "some-name",
       "storageUrl" := "https://some-name.blob.core.windows.net",
       "credentials" := Json.obj(
+        "auth" := "sharedKey",
         "name" := "some-name",
         "key" := "some-key"))
 
     AzureDestinationModule
       .sanitizeDestinationConfig(toRedact) must_== Json.jEmptyObject
-
   }
 }

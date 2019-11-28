@@ -16,14 +16,20 @@
 
 package quasar.destination.azure
 
+import scala._
+
 import quasar.api.destination.{Destination, DestinationType, ResultSink}
 import quasar.api.push.RenderConfig
 import quasar.api.resource.ResourcePath
+import quasar.blobstore.azure.{AzurePutService, Expires}
 import quasar.blobstore.paths.{BlobPath, PathElem, Path}
 import quasar.blobstore.services.PutService
 
-import cats.effect.{Concurrent, ContextShift}
-import cats.syntax.functor._
+import cats.effect.{ConcurrentEffect, ContextShift, Timer}
+import cats.effect.concurrent.Ref
+import cats.implicits._
+
+import com.microsoft.azure.storage.blob.ContainerURL
 
 import eu.timepit.refined.auto._
 
@@ -31,15 +37,21 @@ import fs2.Stream
 
 import scalaz.NonEmptyList
 
-final case class AzureDestination[F[_]: Concurrent: ContextShift](
-  put: PutService[F]) extends Destination[F] {
+final case class AzureDestination[F[_]: ConcurrentEffect: ContextShift: Timer](
+  refContainerURL: Ref[F, Expires[ContainerURL]],
+  refresh: F[Unit]) extends Destination[F] {
+
   def destinationType: DestinationType = DestinationType("azure-dest", 1L)
 
   def sinks: NonEmptyList[ResultSink[F]] = NonEmptyList(csvSink)
 
   private def csvSink = ResultSink.csv[F](RenderConfig.Csv()) {
-    case (path, _, bytes) =>
-      Stream.eval(put((toBlobPath(path), bytes)).void)
+    case (path, _, bytes) => Stream.eval(for {
+      _ <- refresh
+      containerURL <- refContainerURL.get
+      put: PutService[F] = AzurePutService.mk[F](containerURL.value)
+      _ <- put((toBlobPath(path), bytes))
+    } yield ())
   }
 
   private def toBlobPath(path: ResourcePath): BlobPath =

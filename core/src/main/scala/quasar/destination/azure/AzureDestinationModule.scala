@@ -27,8 +27,10 @@ import quasar.blobstore.azure.{
   AccountName,
   Azure,
   AzureCredentials,
-  AzurePutService,
-  AzureStatusService
+  AzureStatusService,
+  ClientId,
+  ClientSecret,
+  TenantId
 }
 import quasar.blobstore.BlobstoreStatus
 
@@ -38,20 +40,28 @@ import eu.timepit.refined.auto._
 
 import cats.data.EitherT
 import cats.effect.{ConcurrentEffect, ContextShift, Resource, Timer}
-import cats.syntax.either._
+import cats.implicits._
+
 import scalaz.NonEmptyList
 
 object AzureDestinationModule extends DestinationModule {
   private val Redacted = "<REDACTED>"
-  private val RedactedCreds =
-    AzureCredentials(AccountName(Redacted), AccountKey(Redacted))
+  private val SharedKeyRedactedCreds =
+    AzureCredentials.SharedKey(AccountName(Redacted), AccountKey(Redacted))
+  private val ActiveDirectoryRedactedCreds =
+    AzureCredentials.ActiveDirectory(ClientId(Redacted), TenantId(Redacted), ClientSecret(Redacted))
 
   def destinationType: DestinationType =
     DestinationType("azure-dest", 1L)
 
   def sanitizeDestinationConfig(config: Json): Json =
     config.as[AzureConfig].result.fold(_ => Json.jEmptyObject, cfg =>
-      cfg.copy(credentials = RedactedCreds).asJson)
+      (cfg.credentials match {
+        case AzureCredentials.SharedKey(_, _) =>
+          cfg.copy(credentials = SharedKeyRedactedCreds)
+        case AzureCredentials.ActiveDirectory(_, _, _) =>
+          cfg.copy(credentials = ActiveDirectoryRedactedCreds)
+      }).asJson)
 
   def destination[F[_]: ConcurrentEffect: ContextShift: MonadResourceErr: Timer](
     config: Json): Resource[F, Either[InitializationError[Json], Destination[F]]] =
@@ -63,8 +73,10 @@ object AzureDestinationModule extends DestinationModule {
               DestinationError.malformedConfiguration((destinationType, config, err))
           })
 
-        containerUrl <- EitherT.liftF(Azure.mkContainerUrl[F](AzureConfig.toConfig(azureConfig)))
-        status <- EitherT.liftF(AzureStatusService.mk[F](containerUrl))
+        (refContainerURL, refresh) <- EitherT.liftF(Azure.refContainerUrl(AzureConfig.toConfig(azureConfig)))
+        containerURL <- EitherT.liftF(refContainerURL.get)
+
+        status <- EitherT.liftF(AzureStatusService.mk[F](containerURL.value))
 
         _ <- EitherT.fromEither[F](status match {
           case BlobstoreStatus.NotFound =>
@@ -80,7 +92,7 @@ object AzureDestinationModule extends DestinationModule {
             ().asRight
         })
 
-        destination: Destination[F] = AzureDestination[F](AzurePutService.mk[F](containerUrl))
+        destination: Destination[F] = AzureDestination[F](refContainerURL, refresh)
 
       } yield destination).value)
 }
