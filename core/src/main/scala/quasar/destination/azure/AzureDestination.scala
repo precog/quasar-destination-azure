@@ -18,13 +18,14 @@ package quasar.destination.azure
 
 import scala._
 
-import quasar.api.destination.{Destination, DestinationType, ResultSink}
+import quasar.api.destination.{DestinationType, ResultSink, UntypedDestination}
 import quasar.api.push.RenderConfig
 import quasar.api.resource.ResourcePath
 import quasar.blobstore.azure.{AzurePutService, Expires}
 import quasar.blobstore.paths.{BlobPath, PathElem, Path}
 import quasar.blobstore.services.PutService
 
+import cats.data.NonEmptyList
 import cats.effect.{ConcurrentEffect, ContextShift, Timer}
 import cats.effect.concurrent.Ref
 import cats.implicits._
@@ -35,17 +36,16 @@ import eu.timepit.refined.auto._
 
 import fs2.Stream
 
-import scalaz.NonEmptyList
-
 final case class AzureDestination[F[_]: ConcurrentEffect: ContextShift: Timer](
-  refContainerURL: Ref[F, Expires[ContainerURL]],
-  refresh: F[Unit]) extends Destination[F] {
+    refContainerURL: Ref[F, Expires[ContainerURL]],
+    refresh: F[Unit])
+    extends UntypedDestination[F] {
 
   def destinationType: DestinationType = DestinationType("azure-dest", 1L)
 
-  def sinks: NonEmptyList[ResultSink[F]] = NonEmptyList(csvSink)
+  def sinks: NonEmptyList[ResultSink[F, Unit]] = NonEmptyList.one(csvSink)
 
-  private def csvSink = ResultSink.csv[F](RenderConfig.Csv()) {
+  private def csvSink = ResultSink.csv[F, Unit](RenderConfig.Csv()) {
     case (path, _, bytes) => Stream.eval(for {
       _ <- refresh
       containerURL <- refContainerURL.get
