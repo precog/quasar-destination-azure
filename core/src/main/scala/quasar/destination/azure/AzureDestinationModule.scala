@@ -19,9 +19,10 @@ package quasar.destination.azure
 import scala._
 import scala.util.Either
 
+import quasar.api.destination.{DestinationError, DestinationType}
 import quasar.api.destination.DestinationError.InitializationError
-import quasar.api.destination.{Destination, DestinationError, DestinationType}
-import quasar.connector.{DestinationModule, MonadResourceErr}
+import quasar.connector.MonadResourceErr
+import quasar.connector.destination.{Destination, DestinationModule}
 import quasar.blobstore.azure.{
   AccountKey,
   AccountName,
