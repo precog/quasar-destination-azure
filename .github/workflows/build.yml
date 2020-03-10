@@ -110,7 +110,7 @@ jobs:
       - name: Install common resources
         run: $SBT transferCommonResources
       - name: Transfer Publish and Tag Resources
-         run: $SBT transferPublishAndTagResources
+        run: $SBT transferPublishAndTagResources
       - name: Export common secrets
         run: $SBT exportSecretsForActions
       - name: Run common setup
