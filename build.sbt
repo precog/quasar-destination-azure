@@ -12,7 +12,6 @@ scmInfo in ThisBuild := Some(ScmInfo(
 lazy val publishTestsSettings = Seq(
   Test / packageBin / publishArtifact := true)
 
-lazy val QuasarVersion = IO.read(file("./quasar-version")).trim
 val ArgonautVersion = "6.2.3"
 val AsyncBlobstoreVersion = "2.0.1"
 val Fs2Version = "2.1.0"
@@ -31,7 +30,7 @@ lazy val core = project
     performMavenCentralSync := false,
     publishAsOSSProject := false,
     quasarPluginName := "azure-dest",
-    quasarPluginQuasarVersion := QuasarVersion,
+    quasarPluginQuasarVersion := managedVersions.value("slamdata-quasar"),
     quasarPluginDestinationFqcn := Some("quasar.destination.azure.AzureDestinationModule$"),
     quasarPluginDependencies ++= Seq(
       "com.slamdata" %% "async-blobstore-azure" % AsyncBlobstoreVersion,
