@@ -2,18 +2,19 @@ import scala.collection.Seq
 
 ThisBuild / scalaVersion := "2.12.10"
 
-homepage in ThisBuild := Some(url("https://github.com/slamdata/quasar-destination-azure"))
+ThisBuild / githubRepository := "quasar-destination-azure"
+
+homepage in ThisBuild := Some(url("https://github.com/precog/quasar-destination-azure"))
 
 scmInfo in ThisBuild := Some(ScmInfo(
-  url("https://github.com/slamdata/quasar-destination-azure"),
-  "scm:git@github.com:slamdata/quasar-destination-azure.git"))
+  url("https://github.com/precog/quasar-destination-azure"),
+  "scm:git@github.com:precog/quasar-destination-azure.git"))
 
 // Include to also publish a project's tests
 lazy val publishTestsSettings = Seq(
   Test / packageBin / publishArtifact := true)
 
 val ArgonautVersion = "6.2.3"
-val AsyncBlobstoreVersion = "2.0.1"
 val Fs2Version = "2.1.0"
 val SpecsVersion = "4.8.3"
 
@@ -21,7 +22,6 @@ lazy val root = project
   .in(file("."))
   .settings(noPublishSettings)
   .aggregate(core)
-  .enablePlugins(AutomateHeaderPlugin)
 
 lazy val core = project
   .in(file("core"))
@@ -30,13 +30,13 @@ lazy val core = project
     performMavenCentralSync := false,
     publishAsOSSProject := false,
     quasarPluginName := "azure-dest",
-    quasarPluginQuasarVersion := managedVersions.value("slamdata-quasar"),
+    quasarPluginQuasarVersion := managedVersions.value("precog-quasar"),
     quasarPluginDestinationFqcn := Some("quasar.destination.azure.AzureDestinationModule$"),
     quasarPluginDependencies ++= Seq(
-      "com.slamdata" %% "async-blobstore-azure" % AsyncBlobstoreVersion,
-      "com.slamdata" %% "async-blobstore-core" % AsyncBlobstoreVersion,
+      "com.precog" %% "async-blobstore-azure" % managedVersions.value("precog-async-blobstore"),
+      "com.precog" %% "async-blobstore-core" % managedVersions.value("precog-async-blobstore"),
       "io.argonaut" %% "argonaut" % ArgonautVersion,
       "co.fs2" %% "fs2-core" % Fs2Version),
     libraryDependencies ++= Seq(
       "org.specs2" %% "specs2-core" % SpecsVersion % Test))
-  .enablePlugins(AutomateHeaderPlugin, QuasarPlugin)
+  .enablePlugins(QuasarPlugin)
