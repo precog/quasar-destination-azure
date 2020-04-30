@@ -16,7 +16,7 @@ lazy val publishTestsSettings = Seq(
 
 val ArgonautVersion = "6.2.3"
 val Fs2Version = "2.1.0"
-val SpecsVersion = "4.8.3"
+val SpecsVersion = "4.9.2"
 
 lazy val root = project
   .in(file("."))
