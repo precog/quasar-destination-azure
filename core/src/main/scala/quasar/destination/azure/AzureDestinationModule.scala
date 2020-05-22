@@ -74,10 +74,10 @@ object AzureDestinationModule extends DestinationModule {
               DestinationError.malformedConfiguration((destinationType, config, err))
           })
 
-        (refContainerURL, refresh) <- EitherT.liftF(Azure.refContainerUrl(AzureConfig.toConfig(azureConfig)))
-        containerURL <- EitherT.liftF(refContainerURL.get)
+        (refContainerClient, refresh) <- EitherT.liftF(Azure.refContainerClient(AzureConfig.toConfig(azureConfig)))
+        containerClient <- EitherT.liftF(refContainerClient.get)
 
-        status <- EitherT.liftF(AzureStatusService.mk[F](containerURL.value))
+        status <- EitherT.liftF(AzureStatusService.mk[F](containerClient.value))
 
         _ <- EitherT.fromEither[F](status match {
           case BlobstoreStatus.NotFound =>
@@ -93,7 +93,7 @@ object AzureDestinationModule extends DestinationModule {
             ().asRight
         })
 
-        destination: Destination[F] = AzureDestination[F](refContainerURL, refresh)
+        destination: Destination[F] = AzureDestination[F](refContainerClient, refresh)
 
       } yield destination).value)
 }

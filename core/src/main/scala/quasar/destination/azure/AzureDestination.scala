@@ -30,15 +30,12 @@ import cats.data.NonEmptyList
 import cats.effect.{ConcurrentEffect, ContextShift, Timer}
 import cats.effect.concurrent.Ref
 import cats.implicits._
-
-import com.microsoft.azure.storage.blob.ContainerURL
-
+import com.azure.storage.blob.BlobContainerAsyncClient
 import eu.timepit.refined.auto._
-
 import fs2.Stream
 
 final case class AzureDestination[F[_]: ConcurrentEffect: ContextShift: Timer](
-    refContainerURL: Ref[F, Expires[ContainerURL]],
+    refContainerClient: Ref[F, Expires[BlobContainerAsyncClient]],
     refresh: F[Unit])
     extends UntypedDestination[F] {
 
@@ -49,8 +46,8 @@ final case class AzureDestination[F[_]: ConcurrentEffect: ContextShift: Timer](
   private def csvSink = ResultSink.create[F, Unit](RenderConfig.Csv()) {
     case (path, _, bytes) => Stream.eval(for {
       _ <- refresh
-      containerURL <- refContainerURL.get
-      put: PutService[F] = AzurePutService.mk[F](containerURL.value)
+      containerClient <- refContainerClient.get
+      put: PutService[F] = AzurePutService.mk[F](containerClient.value)
       _ <- put((toBlobPath(path), bytes))
     } yield ())
   }
