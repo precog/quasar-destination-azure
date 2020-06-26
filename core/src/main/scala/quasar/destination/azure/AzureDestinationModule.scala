@@ -37,8 +37,6 @@ import quasar.blobstore.BlobstoreStatus
 
 import argonaut._, Argonaut._
 
-import eu.timepit.refined.auto._
-
 import cats.data.EitherT
 import cats.effect.{ConcurrentEffect, ContextShift, Resource, Timer}
 import cats.implicits._

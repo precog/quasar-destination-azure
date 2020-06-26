@@ -31,7 +31,6 @@ import cats.effect.{ConcurrentEffect, ContextShift, Timer}
 import cats.effect.concurrent.Ref
 import cats.implicits._
 import com.azure.storage.blob.BlobContainerAsyncClient
-import eu.timepit.refined.auto._
 import fs2.Stream
 
 final case class AzureDestination[F[_]: ConcurrentEffect: ContextShift: Timer](
