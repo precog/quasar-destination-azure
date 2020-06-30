@@ -22,7 +22,7 @@ import scala.util.Either
 import quasar.api.destination.{DestinationError, DestinationType}
 import quasar.api.destination.DestinationError.InitializationError
 import quasar.connector.MonadResourceErr
-import quasar.connector.destination.{Destination, DestinationModule}
+import quasar.connector.destination.{Destination, DestinationModule, PushmiPullyu}
 import quasar.blobstore.azure.{
   AccountKey,
   AccountName,
@@ -63,7 +63,9 @@ object AzureDestinationModule extends DestinationModule {
       }).asJson)
 
   def destination[F[_]: ConcurrentEffect: ContextShift: MonadResourceErr: Timer](
-    config: Json): Resource[F, Either[InitializationError[Json], Destination[F]]] =
+      config: Json,
+      pushPull: PushmiPullyu[F])
+      : Resource[F, Either[InitializationError[Json], Destination[F]]] =
     Resource.liftF(
       (for {
         azureConfig <- EitherT.fromEither[F](
