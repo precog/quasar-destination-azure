@@ -66,7 +66,7 @@ object AzureDestinationModule extends DestinationModule {
       config: Json,
       pushPull: PushmiPullyu[F])
       : Resource[F, Either[InitializationError[Json], Destination[F]]] =
-    Resource.liftF(
+    Resource.eval(
       (for {
         azureConfig <- EitherT.fromEither[F](
           config.as[AzureConfig].result.leftMap {
