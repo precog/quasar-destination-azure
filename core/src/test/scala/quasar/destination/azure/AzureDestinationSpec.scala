@@ -23,9 +23,7 @@ import quasar.api.Column
 import quasar.api.resource.{ResourceName, ResourcePath}
 import quasar.blobstore.paths.{BlobPath, PathElem}
 import quasar.blobstore.services.PutService
-import quasar.connector.ResourceError
 import quasar.connector.destination.ResultSink
-import quasar.contrib.scalaz.MonadError_
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -103,9 +101,6 @@ object AzureDestinationSpec extends EffectfulQSpec[IO] {
       case _ =>
         None
     }
-
-  private implicit val ioMonadResourceErr: MonadError_[IO, ResourceError] =
-    MonadError_.facet[IO](ResourceError.throwableP)
 }
 
 object MockPut {
