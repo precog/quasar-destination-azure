@@ -38,5 +38,9 @@ lazy val core = project
       "io.argonaut" %% "argonaut" % ArgonautVersion,
       "co.fs2" %% "fs2-core" % Fs2Version),
     libraryDependencies ++= Seq(
-      "org.specs2" %% "specs2-core" % SpecsVersion % Test))
+      "org.specs2" %% "specs2-core" % SpecsVersion % Test,
+      "com.precog" %% "quasar-foundation" % managedVersions.value("precog-quasar"),
+      "org.specs2" %% "specs2-scalacheck" % SpecsVersion % Test,
+      "org.specs2" %% "specs2-scalaz" % SpecsVersion % Test,
+      "com.precog" %% "quasar-foundation" % managedVersions.value("precog-quasar") % Test classifier "tests"))
   .enablePlugins(QuasarPlugin)
